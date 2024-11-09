@@ -32,14 +32,18 @@ pub fn parse() -> Config {
     let target = match cli_target.as_str() {
         "d" | "docker" => Target::Docker,
         "r" | "repository" => Target::Repository,
+
         _ => Target::Repository,
     };
 
     let action = match cli_action.as_str() {
         "c" | "commit" => Action::Commit,
+        "p" | "push" => Action::Push,
+
         "r" | "reset" => Action::Reset,
         "d" | "down" => Action::Down,
         "u" | "up" => Action::Up,
+
         _ => Action::Reset,
     };
 
