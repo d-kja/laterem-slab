@@ -89,8 +89,8 @@ pub struct Config {
 impl Action {
     pub fn run(config: &Config) -> Result<(), LateremError> {
         println!(
-            "{}",
-            " RUNNING ACTIONS \t\n".on_dark_magenta().white().bold()
+            "{}\t\n",
+            " RUNNING ACTIONS ".on_dark_magenta().white().bold()
         );
 
         match config.target {

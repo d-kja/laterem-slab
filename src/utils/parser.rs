@@ -49,7 +49,7 @@ pub fn parse() -> Config {
         _ => Action::Reset,
     };
 
-    println!("{}", " SELECTED OPTIONS \t\n".bold().on_dark_magenta().white());
+    println!("{}\t\n", " SELECTED OPTIONS ".bold().on_dark_magenta().white());
 
     println!(" - {} {}", "Target:".dark_magenta().bold(), target);
     println!(" - {} {}\t\n", "Action:".dark_magenta().bold(), action);
