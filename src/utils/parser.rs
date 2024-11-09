@@ -16,8 +16,8 @@ pub struct Cli {
     action: Option<String>,
 
     /// Arguments for the base cli command
-    #[arg(short)]
-    arguments: Vec<String>
+    #[arg(short, long = "args")]
+    arguments: Vec<String>,
 }
 
 pub fn parse() -> Config {

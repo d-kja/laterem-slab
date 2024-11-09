@@ -61,7 +61,7 @@ pub struct Config {
     pub target: Target,
     pub action: Action,
     pub defaults: Option<Box<DefaultConfig>>,
-    pub arguments: Vec<String>
+    pub arguments: Vec<String>,
 }
 
 impl Action {
@@ -106,13 +106,10 @@ impl Action {
                     .expect("Unable to retrieve the default configuration");
                 let args: Vec<&str> = config.arguments.iter().map(|item| item.as_str()).collect();
 
-                println!("{args:?}");
-
                 let branch = Command::new("git")
                     .args(["branch", "--show-current"])
                     .output()
                     .expect("Didn't manage to retrieve the active branch");
-
                 let branch = String::from_utf8(branch.stdout)
                     .expect("Unable to convert the stdout response");
                 let branch = branch.replace("\n", "");
@@ -146,11 +143,15 @@ impl Action {
                             .args([["commit", "-m"].to_vec(), args].concat())
                             .status()
                             .expect("Unable to commit files");
-                        
+
                         Ok(())
                     }
                     Action::Push => {
-                        let branch = "";
+                        Command::new("git")
+                            .args(["push", "origin", branch.as_str()])
+                            .status()
+                            .expect("An error occurred when committing files");
+
                         Ok(())
                     }
                     _ => Err(LateremError::InvalidArgument),
