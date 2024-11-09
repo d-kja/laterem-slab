@@ -1,6 +1,6 @@
-use std::{error::Error, fmt::Display, process::Command};
-
+use crossterm::style::Stylize;
 use serde::{Deserialize, Serialize};
+use std::{error::Error, fmt::Display, process::Command};
 
 #[derive(Debug)]
 pub enum LateremError {
@@ -39,21 +39,43 @@ pub enum Target {
     Repository,
 }
 
+impl Display for Target {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Target::Docker => write!(f, "docker"),
+            Target::Repository => write!(f, "repository"),
+        }
+    }
+}
+
 pub enum Action {
     /// restart docker or reset repository
     Reset,
 
     /// docker compose down
     Down,
-
     /// docker compose up -d
     Up,
 
     /// git commit -m "$1" && git push origin $branch
     Commit,
-
-    /// git push oringin $branch
+    /// git push origin $branch
     Push,
+    /// git pull origin $branch
+    Pull,
+}
+
+impl Display for Action {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Action::Reset => write!(f, "reset"),
+            Action::Down => write!(f, "down"),
+            Action::Up => write!(f, "up"),
+            Action::Commit => write!(f, "commit"),
+            Action::Push => write!(f, "push"),
+            Action::Pull => write!(f, "pull"),
+        }
+    }
 }
 
 pub struct Config {
@@ -66,14 +88,33 @@ pub struct Config {
 
 impl Action {
     pub fn run(config: &Config) -> Result<(), LateremError> {
+        println!(
+            "{}",
+            " RUNNING ACTIONS \t\n".on_dark_magenta().white().bold()
+        );
+
         match config.target {
             Target::Docker => match &config.action {
                 Action::Reset => {
+                    println!(
+                        "{}{}{}{}",
+                        "Taking instance down".dim(),
+                        ".".rapid_blink(),
+                        ".".rapid_blink(),
+                        ".".dim(),
+                    );
                     Command::new("docker")
                         .args(["compose", "down"])
                         .status()
                         .expect("Didn't manage to take the instance down");
 
+                    println!(
+                        "\t\n{}{}{}{}",
+                        "Launching a new instance".dim(),
+                        ".".rapid_blink(),
+                        ".".rapid_blink(),
+                        ".".dim(),
+                    );
                     Command::new("docker")
                         .args(["compose", "up", "-d"])
                         .status()
@@ -82,6 +123,13 @@ impl Action {
                     Ok(())
                 }
                 Action::Down => {
+                    println!(
+                        "{}{}{}{}",
+                        "Taking instance down".dim(),
+                        ".".rapid_blink(),
+                        ".".rapid_blink(),
+                        ".".dim(),
+                    );
                     Command::new("docker")
                         .args(["compose", "down"])
                         .status()
@@ -90,6 +138,13 @@ impl Action {
                     Ok(())
                 }
                 Action::Up => {
+                    println!(
+                        "{}{}{}{}",
+                        "Launching a new instance".dim(),
+                        ".".rapid_blink(),
+                        ".".rapid_blink(),
+                        ".".dim(),
+                    );
                     Command::new("docker")
                         .args(["compose", "up", "-d"])
                         .status()
@@ -116,29 +171,92 @@ impl Action {
 
                 match &config.action {
                     Action::Reset => {
+                        println!(
+                            "{}{}{}{}",
+                            "Staging files".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
                         Command::new("git")
                             .args(["add", "."])
                             .status()
                             .expect("Couldn't stage the changed files");
 
+                        println!(
+                            "\t\n{}{}{}{}",
+                            "Stashing staged files".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
                         Command::new("git")
                             .args(["stash"])
                             .status()
                             .expect("Couldn't stash the changes");
 
+                        println!(
+                            "\t\n{} {}{}{}{}",
+                            "Checking out to".dim(),
+                            branch.clone().magenta(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
                         Command::new("git")
                             .args(["checkout", &defaults.branch])
                             .status()
                             .expect("Unable to go back to the main branch");
 
+                        println!(
+                            "\t\n{} {} {}{}{}",
+                            "Pulling changes from".dim(),
+                            branch.clone().magenta(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["pull", "origin", &branch])
+                            .status()
+                            .expect("Unable to pull the updates");
+
+                        println!(
+                            "\t\n{} {}{}{}{}",
+                            "Going back to original branch".dim(),
+                            branch.clone().magenta(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
                         Command::new("git")
                             .args(["checkout", &branch])
                             .status()
                             .expect("Unable to checkout to the old branch");
 
+                        println!(
+                            "\t\n{}{}{}{}",
+                            "Popping stash".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["stash", "pop"])
+                            .status()
+                            .expect("Couldn't pop the stash");
+
                         Ok(())
                     }
                     Action::Commit => {
+                        println!(
+                            "{} {}{}{}{}",
+                            "Committing staged changes to".dim(),
+                            branch.clone().magenta(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
                         Command::new("git")
                             .args([["commit", "-m"].to_vec(), args].concat())
                             .status()
@@ -147,10 +265,70 @@ impl Action {
                         Ok(())
                     }
                     Action::Push => {
+                        println!(
+                            "{} {}{}{}{}",
+                            "Pushing committed changes to".dim(),
+                            branch.clone().magenta(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
                         Command::new("git")
                             .args(["push", "origin", branch.as_str()])
                             .status()
-                            .expect("An error occurred when committing files");
+                            .expect("Unable to commit the files");
+
+                        Ok(())
+                    }
+                    Action::Pull => {
+                        println!(
+                            "{}{}{}{}",
+                            "Staging changes".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["add", "*"])
+                            .status()
+                            .expect("Unable to stage the files");
+
+                        println!(
+                            "\t\n{}{}{}{}",
+                            "Stashing staged changes".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["stash"])
+                            .status()
+                            .expect("Unable to stash the staged files");
+
+                        println!(
+                            "\t\n{} {}{}{}{}",
+                            "Pulling changes from".dim(),
+                            branch.clone().magenta(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["pull", "origin", &branch])
+                            .status()
+                            .expect("Unable to pull the updates");
+
+                        println!(
+                            "\t\n{}{}{}{}",
+                            "Popping stash".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["stash", "pop"])
+                            .status()
+                            .expect("Unable to pop the stash");
 
                         Ok(())
                     }
@@ -172,8 +350,24 @@ impl Config {
         let response = Action::run(self);
 
         match response {
-            Err(message) => println!("An error ocurred: {}", message),
-            _ => {}
+            Ok(()) => {
+                println!(
+                    "\t\n{}\t\n",
+                    " THE ACTION RAN SUCCESSFULLY "
+                        .on_dark_magenta()
+                        .white()
+                        .bold(),
+                );
+            }
+            Err(message) => {
+                println!("\t\n{}\t\n", " ERROR OUTPUT ".on_dark_red().white().bold(),);
+
+                println!(
+                    " {} {}\t\n",
+                    "An error ocurred:".dim().bold(),
+                    message.to_string().dim(),
+                );
+            }
         }
     }
 }

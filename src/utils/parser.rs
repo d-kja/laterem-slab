@@ -1,4 +1,5 @@
 use clap::Parser;
+use crossterm::style::Stylize;
 
 use super::entities::{Action, Config, Target};
 
@@ -12,7 +13,7 @@ pub struct Cli {
     /// The target of the action, e.g: `docker` or `repository`
     target: String,
 
-    /// Select the target action, e.g: `commit`, `reset`, `down`, and `up`
+    /// Select the target action, e.g: `reset`, `commit`, `push`, `pull`, `down`, and `up`
     action: Option<String>,
 
     /// Arguments for the base cli command
@@ -38,7 +39,8 @@ pub fn parse() -> Config {
 
     let action = match cli_action.as_str() {
         "c" | "commit" => Action::Commit,
-        "p" | "push" => Action::Push,
+        "push" => Action::Push,
+        "pull" => Action::Pull,
 
         "r" | "reset" => Action::Reset,
         "d" | "down" => Action::Down,
@@ -46,6 +48,11 @@ pub fn parse() -> Config {
 
         _ => Action::Reset,
     };
+
+    println!("{}", " SELECTED OPTIONS \t\n".bold().on_dark_magenta().white());
+
+    println!(" - {} {}", "Target:".dark_magenta().bold(), target);
+    println!(" - {} {}\t\n", "Action:".dark_magenta().bold(), action);
 
     Config {
         path,
