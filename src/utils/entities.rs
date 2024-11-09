@@ -249,6 +249,10 @@ impl Action {
                         Ok(())
                     }
                     Action::Commit => {
+                        if args.is_empty() {
+                            return Err(LateremError::InvalidArgument);
+                        }
+
                         println!(
                             "{} {}{}{}{}",
                             "Committing staged changes to".dim(),
@@ -366,8 +370,8 @@ impl Config {
 
                 println!(
                     " {} {}\t\n",
-                    "An error ocurred:".dim().bold(),
-                    message.to_string().dim(),
+                    "An error ocurred:".slow_blink().bold(),
+                    message.to_string().slow_blink().underlined(),
                 );
             }
         }
