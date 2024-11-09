@@ -345,8 +345,6 @@ impl Action {
 
 impl Config {
     pub fn setup(&mut self) {
-        Command::new("clear").status().unwrap();
-
         // TODO: prompt user to create first config file
         // let config = std::fs::read(&self.path);
 
