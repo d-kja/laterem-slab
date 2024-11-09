@@ -41,8 +41,8 @@ pub fn parse() -> Config {
 
     let action = match cli_action.as_str() {
         "c" | "commit" => Action::Commit,
-        "push" => Action::Push,
-        "pull" => Action::Pull,
+        "ps" | "push" => Action::Push,
+        "pl" | "pull" => Action::Pull,
 
         "r" | "reset" => Action::Reset,
         "d" | "down" => Action::Down,
