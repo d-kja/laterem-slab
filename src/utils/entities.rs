@@ -198,7 +198,7 @@ impl Action {
                         println!(
                             "\t\n{} {}{}{}{}",
                             "Checking out to".dim(),
-                            branch.clone().magenta(),
+                            defaults.branch.clone().magenta(),
                             ".".rapid_blink(),
                             ".".rapid_blink(),
                             ".".dim(),
@@ -211,13 +211,13 @@ impl Action {
                         println!(
                             "\t\n{} {} {}{}{}",
                             "Pulling changes from".dim(),
-                            branch.clone().magenta(),
+                            defaults.branch.clone().magenta(),
                             ".".rapid_blink(),
                             ".".rapid_blink(),
                             ".".dim(),
                         );
                         Command::new("git")
-                            .args(["pull", "origin", &branch])
+                            .args(["pull", "origin", &defaults.branch])
                             .status()
                             .expect("Unable to pull the updates");
 
