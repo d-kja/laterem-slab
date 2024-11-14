@@ -1,6 +1,11 @@
 use crossterm::style::Stylize;
 use serde::{Deserialize, Serialize};
-use std::{error::Error, fmt::Display, process::Command};
+use std::{
+    error::Error,
+    fmt::Display,
+    io::{Read, Write},
+    process::{Command, Stdio},
+};
 
 #[derive(Debug)]
 pub enum LateremError {
@@ -26,8 +31,43 @@ pub struct DefaultConfig {
 
 impl Default for DefaultConfig {
     fn default() -> Self {
+        let mut git = Command::new("git")
+            .args(["remote", "show", "origin"])
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("Unable to spawn GIT instance");
+
+        let mut sed = Command::new("sed")
+            .args(["-n", "/HEAD branch/s/.*: //p"])
+            .stdin(Stdio::piped())
+            .stdout(Stdio::piped())
+            .spawn()
+            .expect("Unable to spawn SED instance");
+
+        if let Some(ref mut git_stdout) = git.stdout {
+            if let Some(ref mut stdin) = sed.stdin {
+                let mut buffer: Vec<u8> = Vec::new();
+
+                git_stdout
+                    .read_to_end(&mut buffer)
+                    .expect("Unable to read STDOUT from GIT instance");
+                stdin
+                    .write_all(&buffer)
+                    .expect("Unable to write to STDIN using SED instance");
+            }
+        }
+
+        let _ = git.wait().unwrap();
+        let origin = sed
+            .wait_with_output()
+            .expect("Unable to retrieve STDOUT from SED instance")
+            .stdout;
+        let origin = String::from_utf8(origin)
+            .expect("Unable to convert origin buffer into a utf8 string")
+            .replace("\n", "");
+
         Self {
-            branch: "main".to_string(),
+            branch: origin,
             stash_files: true,
             detach_container: true,
         }
