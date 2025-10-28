@@ -35,6 +35,7 @@ pub fn parse() -> Config {
     let target = match cli_target.as_str() {
         "d" | "docker" => Target::Docker,
         "r" | "repository" => Target::Repository,
+        "rc" | "current" => Target::Repository,
 
         _ => Target::Repository,
     };

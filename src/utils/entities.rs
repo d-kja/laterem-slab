@@ -77,6 +77,7 @@ impl Default for DefaultConfig {
 pub enum Target {
     Docker,
     Repository,
+    RepositoryCurrent,
 }
 
 impl Display for Target {
@@ -84,6 +85,7 @@ impl Display for Target {
         match self {
             Target::Docker => write!(f, "docker"),
             Target::Repository => write!(f, "repository"),
+            Target::RepositoryCurrent => write!(f, "current"),
         }
     }
 }
@@ -273,6 +275,174 @@ impl Action {
                             .args(["checkout", &branch])
                             .status()
                             .expect("Unable to checkout to the old branch");
+
+                        println!(
+                            "\t\n{}{}{}{}",
+                            "Popping stash".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["stash", "pop"])
+                            .status()
+                            .expect("Couldn't pop the stash");
+
+                        Ok(())
+                    }
+                    Action::Commit => {
+                        if args.is_empty() {
+                            return Err(LateremError::InvalidArgument);
+                        }
+
+                        println!(
+                            "{} {}{}{}{}",
+                            "Committing staged changes to".dim(),
+                            branch.clone().magenta(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args([["commit", "-m"].to_vec(), args].concat())
+                            .status()
+                            .expect("Unable to commit files");
+
+                        Ok(())
+                    }
+                    Action::Push => {
+                        println!(
+                            "{} {}{}{}{}",
+                            "Pushing committed changes to".dim(),
+                            branch.clone().magenta(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["push", "origin", branch.as_str()])
+                            .status()
+                            .expect("Unable to commit the files");
+
+                        Ok(())
+                    }
+                    Action::Pull => {
+                        println!(
+                            "{}{}{}{}",
+                            "Staging changes".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["add", "*"])
+                            .status()
+                            .expect("Unable to stage the files");
+
+                        println!(
+                            "\t\n{}{}{}{}",
+                            "Stashing staged changes".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["stash"])
+                            .status()
+                            .expect("Unable to stash the staged files");
+
+                        println!(
+                            "\t\n{} {}{}{}{}",
+                            "Pulling changes from".dim(),
+                            branch.clone().magenta(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["pull", "origin", &branch])
+                            .status()
+                            .expect("Unable to pull the updates");
+
+                        println!(
+                            "\t\n{}{}{}{}",
+                            "Popping stash".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["stash", "pop"])
+                            .status()
+                            .expect("Unable to pop the stash");
+
+                        Ok(())
+                    }
+                    _ => Err(LateremError::InvalidArgument),
+                }
+            }
+            Target::RepositoryCurrent => {
+                let args: Vec<&str> = config.arguments.iter().map(|item| item.as_str()).collect();
+
+                let branch = Command::new("git")
+                    .args(["branch", "--show-current"])
+                    .output()
+                    .expect("Didn't manage to retrieve the active branch");
+                let branch = String::from_utf8(branch.stdout)
+                    .expect("Unable to convert the stdout response");
+                let branch = branch.replace("\n", "");
+
+                match &config.action {
+                    Action::Reset => {
+                        println!(
+                            "{}{}{}{}",
+                            "Staging files".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["add", "."])
+                            .status()
+                            .expect("Couldn't stage the changed files");
+
+                        println!(
+                            "\t\n{}{}{}{}",
+                            "Stashing staged files".dim(),
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["stash"])
+                            .status()
+                            .expect("Couldn't stash the changes");
+
+                        println!(
+                            "\t\n{} {} {}{}{}",
+                            "Fetching branch".dim(),
+                            &branch,
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["fetch", "origin", &branch])
+                            .status()
+                            .expect("Unable to fetch the updates");
+
+                        println!(
+                            "\t\n{} {} {}{}{}",
+                            "Pulling changes from".dim(),
+                            &branch,
+                            ".".rapid_blink(),
+                            ".".rapid_blink(),
+                            ".".dim(),
+                        );
+                        Command::new("git")
+                            .args(["pull", "origin", &branch])
+                            .status()
+                            .expect("Unable to pull the updates");
 
                         println!(
                             "\t\n{}{}{}{}",
